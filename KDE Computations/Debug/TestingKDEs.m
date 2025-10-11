@@ -3,39 +3,72 @@ close all
 WalDF = readtable("WalDF.csv");
 
 %%
-maxVal = length(unique(WalDF.pID));
-ceil(max(WalDF.Event))
-BW = 4;
+numVoters = length(unique(WalDF.pID));
+totalVotes = length(WalDF.Event);
+
+tMax = ceil(max(WalDF.Event));
+BW = 2;
+
+
+[A, binEdges]= histcounts(WalDF.Event, 'BinWidth',BW,'Normalization','count', 'BinLimits',[0,ceil(max(WalDF.Event))]);
+binCenters = binEdges(1:(end-1))+diff(binEdges)/2;
+round(A(1)/numVoters,2)
+histVal = A/(numVoters);
+
+BW = BW/2;
+f = 100;
+xKDE = 0:1/f:tMax;
+% xKDE= binCenters;
+[C, cX]= kde(WalDF.Event,Bandwidth = BW, EvaluationPoints= xKDE, Kernel="normal",Support="positive");
+% Always has to be 1
+% disp(sum(C)*f)
+
+% C = C/max(C)*max(histVal);
+C = C*BW*totalVotes/numVoters;
+
 
 figure
-yyaxis left
-A = histogram(WalDF.Event, 'BinWidth',BW,'Normalization','count', 'BinLimits',[0,ceil(max(WalDF.Event))]);
-binCenters = A.BinEdges(1:(end-1))+diff(A.BinEdges)/2;
-round(A.BinCounts(1)/maxVal,2)
-%---------- For PDF: Gives local probability
-round(A.Values(1)*length(WalDF.Event)*BW/maxVal)
-% hold on
-% xline(binCenters)
-
-
-yyaxis right
+stem(binCenters, histVal)
 hold on
-
-[C, cX]= kde(WalDF.Event,Bandwidth = BW, EvaluationPoints= binCenters,Kernel="normal");
 plot(cX,C,'-r','LineWidth',2)
-%-------- should be close to 1
-sum(C)*BW
 
-%-------- Scale to local probability
-round(A.Values(1)*length(WalDF.Event)*BW/maxVal,2)
-round((C(1)*BW)*length(WalDF.Event)*BW/maxVal,2)
 
+%%
+numVoters = length(unique(WalDF.pID));
+totalVotes = length(WalDF.Event);
+
+tMax = ceil(max(WalDF.Event));
+BW = 2;
+[A, binEdges]= histcounts(WalDF.Event, 'BinWidth',BW,'Normalization','count', 'BinLimits',[0,ceil(max(WalDF.Event))]);
+binCenters = binEdges(1:(end-1))+diff(binEdges)/2;
+round(A(1)/numVoters,2)
+histVal = A/(numVoters)*numVoters;
+
+% f = binCenters;
+xKDE = 0:1/f:tMax;
+% xKDE= binCenters;
+C = zeros(numVoters,length(xKDE));
+pIDs = unique(WalDF.pID);
+for pIdx=1:numVoters
+    [C(pIdx,:), cX]= kde(WalDF.Event(WalDF.pID==pIDs(pIdx)),Bandwidth = BW, EvaluationPoints= xKDE, Kernel="normal",Support="positive");
+end
+% Always has to be 1
+% disp(sum(C)*f)
+
+% C = C/max(C)*max(histVal);
+C = C*BW*totalVotes/numVoters*numVoters;
+
+
+figure
+stem(binCenters, histVal)
+hold on
+plot(cX,C,'-r','LineWidth',2)
 
 %%
 figure
 yyaxis left
 ceil(max(WalDF.Event))
-BW=4;
+BW = 2;
 A = histogram(WalDF.Event, 'BinWidth',BW,'Normalization','pdf', 'BinLimits',[0,ceil(max(WalDF.Event))]);
 
 binCenters = A.BinEdges(1:(end-1))+diff(A.BinEdges)/2;
